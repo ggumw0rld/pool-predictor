@@ -28,10 +28,26 @@ jobs:
           cmake libffi-dev libltdl-dev
         pip install buildozer cython==0.29.33
 
-    - name: Accept Android licenses & Build APK
+    - name: Setup Android SDK licenses
       run: |
         mkdir -p $HOME/.android
         touch $HOME/.android/repositories.cfg
+        # install cmdline-tools
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        cd /tmp
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip -q commandlinetools-linux-11076708_latest.zip
+        mv cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+        export ANDROID_SDK_ROOT=$HOME/android-sdk
+        export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+        # accept all licenses
+        yes | sdkmanager --licenses
+        yes | sdkmanager "build-tools;34.0.0" "platforms;android-33" "platform-tools"
+
+    - name: Build APK
+      run: |
+        export ANDROID_SDK_ROOT=$HOME/android-sdk
+        export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools
         cd $GITHUB_WORKSPACE
         yes | buildozer android debug 2>&1
 
