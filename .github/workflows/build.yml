@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
@@ -28,16 +28,12 @@ jobs:
           cmake libffi-dev libltdl-dev
         pip install buildozer cython==0.29.33
 
-    - name: Accept Android licenses
+    - name: Accept Android licenses & Build APK
       run: |
         mkdir -p $HOME/.android
         touch $HOME/.android/repositories.cfg
-        yes | buildozer android debug 2>&1 | head -5 || true
-        find $HOME/.buildozer -name "sdkmanager" 2>/dev/null | head -1 | xargs -I{} bash -c 'yes | {} --licenses' || true
-
-    - name: Build APK
-      run: |
-        buildozer android debug
+        cd $GITHUB_WORKSPACE
+        yes | buildozer android debug 2>&1
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
