@@ -2,6 +2,7 @@
 from jnius import PythonJavaClass, java_method, autoclass
 from kivy.logger import Logger
 
+# Import các thư viện Java của Android
 PythonService = autoclass('org.kivy.android.PythonService')
 Context = autoclass('android.content.Context')
 WindowManager = autoclass('android.view.WindowManager')
@@ -12,18 +13,46 @@ Button = autoclass('android.widget.Button')
 Color = autoclass('android.graphics.Color')
 Toast = autoclass('android.widget.Toast')
 MotionEvent = autoclass('android.view.MotionEvent')
+Looper = autoclass('android.os.Looper')
+Handler = autoclass('android.os.Handler')
+Build = autoclass('android.os.Build$VERSION')
 
 mService = PythonService.mService
 context = mService.getApplicationContext()
 
+# Tạo Handler để đẩy code lên Main Thread (Luồng giao diện)
+main_handler = Handler(Looper.getMainLooper())
+
+# ==========================================
+# CLASS RUNNABLE: Ép code chạy trên Main Thread
+# ==========================================
+class PyRunnable(PythonJavaClass):
+    __javainterfaces__ = ['java/lang/Runnable']
+    __javacontext__ = 'app'
+    
+    def __init__(self, func):
+        super().__init__()
+        self.func = func
+        
+    @java_method('()V')
+    def run(self):
+        try:
+            self.func()
+        except Exception as e:
+            Logger.error(f"Runnable Error: {e}")
+            # Nếu có lỗi, hiện Toast báo lỗi
+            Toast.makeText(context, f"Lỗi: {str(e)}", Toast.LENGTH_LONG).show()
+
+# ==========================================
+# SỰ KIỆN BẤM VÀ KÉO THẢ
+# ==========================================
 class OnClickListener(PythonJavaClass):
     __javainterfaces__ = ['android/view/View$OnClickListener']
     __javacontext__ = 'app'
 
     @java_method('(Landroid/view/View;)V')
     def onClick(self, view):
-        # Lệnh in ra log (Xem bằng adb logcat)
-        print("Service: Đã bấm nút PREDICT!")
+        Toast.makeText(context, "Đang phân tích...", Toast.LENGTH_SHORT).show()
 
 class OnTouchListener(PythonJavaClass):
     __javainterfaces__ = ['android/view/View$OnTouchListener']
@@ -57,28 +86,43 @@ class OnTouchListener(PythonJavaClass):
             return True
         return False
 
-try:
-    window_manager = context.getSystemService(Context.WINDOW_SERVICE)
-    button = Button(context)
-    button.setText("PREDICT")
-    button.setTextColor(Color.WHITE)
-    button.setBackgroundColor(Color.RED)
+# ==========================================
+# HÀM TẠO NÚT (Sẽ được gọi trên Main Thread)
+# ==========================================
+def create_button():
+    try:
+        window_manager = context.getSystemService(Context.WINDOW_SERVICE)
+        button = Button(context)
+        button.setText("PREDICT")
+        button.setTextColor(Color.WHITE)
+        button.setBackgroundColor(Color.RED)
 
-    params = WindowManagerLayoutParams(
-        WindowManagerLayoutParams.WRAP_CONTENT,
-        WindowManagerLayoutParams.WRAP_CONTENT,
-        WindowManagerLayoutParams.TYPE_APPLICATION_OVERLAY, 
-        WindowManagerLayoutParams.FLAG_NOT_FOCUSABLE,
-        PixelFormat.TRANSLUCENT
-    )
-    params.gravity = Gravity.TOP | Gravity.START
-    params.x = 100 
-    params.y = 300 
+        # Xử lý loại Overlay tùy theo phiên bản Android
+        if Build.SDK_INT >= 26: # Android 8.0 trở lên
+            type_overlay = WindowManagerLayoutParams.TYPE_APPLICATION_OVERLAY
+        else:
+            type_overlay = WindowManagerLayoutParams.TYPE_PHONE
 
-    button.setOnClickListener(OnClickListener())
-    button.setOnTouchListener(OnTouchListener(params, window_manager))
+        params = WindowManagerLayoutParams(
+            WindowManagerLayoutParams.WRAP_CONTENT,
+            WindowManagerLayoutParams.WRAP_CONTENT,
+            type_overlay,
+            WindowManagerLayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        )
+        params.gravity = Gravity.TOP | Gravity.START
+        params.x = 100 
+        params.y = 300 
 
-    window_manager.addView(button, params)
-    print("Service: Nút PREDICT đã được vẽ lên màn hình!")
-except Exception as e:
-    print(f"Service Error (Có thể chưa cấp quyền hiển thị): {e}")
+        button.setOnClickListener(OnClickListener())
+        button.setOnTouchListener(OnTouchListener(params, window_manager))
+
+        window_manager.addView(button, params)
+        Toast.makeText(context, "Đã hiện Nút PREDICT!", Toast.LENGTH_SHORT).show()
+        
+    except Exception as e:
+        # Hiện lỗi lên màn hình nếu bị chặn quyền
+        Toast.makeText(context, f"Lỗi tạo nút: {str(e)}", Toast.LENGTH_LONG).show()
+
+# Đẩy hàm tạo nút vào Main Thread để thực thi
+main_handler.post(PyRunnable(create_button))
