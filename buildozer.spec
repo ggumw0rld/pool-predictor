@@ -5,7 +5,7 @@ package.domain = org.poolpredictor
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
-requirements = python3,kivy==2.3.0,pillow
+requirements = python3==3.11.9,kivy==2.3.0,pillow
 orientation = portrait
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,SYSTEM_ALERT_WINDOW
 android.api = 33
