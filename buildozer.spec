@@ -16,6 +16,7 @@ warn_on_root = 1
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,SYSTEM_ALERT_WINDOW
 android.api = 33
 android.minapi = 26
+android.ndk_api = 26
 android.ndk = 25b
 android.archs = arm64-v8a
 android.allow_backup = True
