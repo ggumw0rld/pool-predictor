@@ -16,17 +16,14 @@ MotionEvent = autoclass('android.view.MotionEvent')
 mService = PythonService.mService
 context = mService.getApplicationContext()
 
-# --- BÁO HIỆU SERVICE ĐÃ CHẠY ---
-# Nếu bấm nút mà không thấy dòng chữ này hiện lên => Service chưa hề chạy (Lỗi ở main.py hoặc do máy chặn)
-Toast.makeText(context, "Service đã khởi động!", Toast.LENGTH_SHORT).show()
-
 class OnClickListener(PythonJavaClass):
     __javainterfaces__ = ['android/view/View$OnClickListener']
     __javacontext__ = 'app'
 
     @java_method('(Landroid/view/View;)V')
     def onClick(self, view):
-        Toast.makeText(context, "Đang phân tích...", Toast.LENGTH_SHORT).show()
+        # Lệnh in ra log (Xem bằng adb logcat)
+        print("Service: Đã bấm nút PREDICT!")
 
 class OnTouchListener(PythonJavaClass):
     __javainterfaces__ = ['android/view/View$OnTouchListener']
@@ -67,13 +64,10 @@ try:
     button.setTextColor(Color.WHITE)
     button.setBackgroundColor(Color.RED)
 
-    # Sửa TYPE_APPLICATION_OVERLAY thành TYPE_PHONE nếu máy bạn chạy Android cũ (dưới Android 8)
-    type_overlay = WindowManagerLayoutParams.TYPE_APPLICATION_OVERLAY 
-    
     params = WindowManagerLayoutParams(
         WindowManagerLayoutParams.WRAP_CONTENT,
         WindowManagerLayoutParams.WRAP_CONTENT,
-        type_overlay,
+        WindowManagerLayoutParams.TYPE_APPLICATION_OVERLAY, 
         WindowManagerLayoutParams.FLAG_NOT_FOCUSABLE,
         PixelFormat.TRANSLUCENT
     )
@@ -85,7 +79,6 @@ try:
     button.setOnTouchListener(OnTouchListener(params, window_manager))
 
     window_manager.addView(button, params)
+    print("Service: Nút PREDICT đã được vẽ lên màn hình!")
 except Exception as e:
-    # Nếu có lỗi khi vẽ nút, nó sẽ hiện lên màn hình cho bạn biết
-    Toast.makeText(context, f"Lỗi tạo nút: {str(e)}", Toast.LENGTH_LONG).show()
-    Logger.error(f"Service Error: {e}")
+    print(f"Service Error (Có thể chưa cấp quyền hiển thị): {e}")
