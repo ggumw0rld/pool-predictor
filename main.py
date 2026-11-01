@@ -5,6 +5,10 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from jnius import autoclass
 from android.permissions import request_permissions, Permission
+from android import mActivity
+
+# Lấy class Toast của Android để hiện thông báo lỗi
+Toast = autoclass('android.widget.Toast')
 
 class PoolPredictorUI(BoxLayout):
     def __init__(self, **kwargs):
@@ -14,7 +18,6 @@ class PoolPredictorUI(BoxLayout):
         self.spacing = 20
 
         # Tự động xin các quyền cần thiết khi mở app
-        # (Bao gồm quyền hiển thị đè lên app khác và quyền đọc bộ nhớ)
         request_permissions([
             Permission.SYSTEM_ALERT_WINDOW,
             Permission.READ_EXTERNAL_STORAGE,
@@ -34,7 +37,7 @@ class PoolPredictorUI(BoxLayout):
         btn_start = Button(
             text="BẬT NÚT NỔI PREDICT", 
             font_size='22sp', 
-            background_color=(0.1, 0.7, 0.1, 1), # Màu xanh lá
+            background_color=(0.1, 0.7, 0.1, 1), 
             size_hint=(1, 0.3)
         )
         btn_start.bind(on_press=self.start_service)
@@ -44,7 +47,7 @@ class PoolPredictorUI(BoxLayout):
         btn_stop = Button(
             text="TẮT NÚT NỔI", 
             font_size='22sp', 
-            background_color=(0.8, 0.1, 0.1, 1), # Màu đỏ
+            background_color=(0.8, 0.1, 0.1, 1), 
             size_hint=(1, 0.3)
         )
         btn_stop.bind(on_press=self.stop_service)
@@ -52,7 +55,7 @@ class PoolPredictorUI(BoxLayout):
 
         # Hướng dẫn
         hdsd = Label(
-            text="Hướng dẫn:\n1. Bấm Bật nút nổi\n2. Thoát ra ngoài, mở game Bida\n3. Nút PREDICT sẽ nổi trên màn hình", 
+            text="Hướng dẫn:\n1. Bật nút nổi\n2. Thoát ra ngoài mở game\n3. Nút PREDICT sẽ nổi lên", 
             font_size='14sp', 
             size_hint=(1, 0.2)
         )
@@ -60,27 +63,35 @@ class PoolPredictorUI(BoxLayout):
 
     def start_service(self, instance):
         try:
-            # Tên class Service được sinh ra dựa trên package.domain và package.name trong buildozer.spec
-            # Cấu trúc: [package.domain].[package.name].Service[ServiceName]
+            # Tên class Service khớp với package.domain và package.name
             service = autoclass('org.poolpredictor.poolpredictor.ServicePoolPredictor')
-            mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+            mActivity_obj = autoclass('org.kivy.android.PythonActivity').mActivity
             
             # Khởi chạy Service chạy ngầm
-            service.start(mActivity, '')
-            print("Đã gửi lệnh bật Service!")
+            service.start(mActivity_obj, '')
+            
+            # Hiện thông báo thành công
+            Toast.makeText(mActivity.getApplicationContext(), "Đã gửi lệnh bật Nút Nổi!", Toast.LENGTH_SHORT).show()
+            
         except Exception as e:
-            print("Lỗi bật service:", e)
+            # Nếu có lỗi, hiện lỗi lên màn hình
+            error_msg = f"Lỗi bật Service: {str(e)}"
+            Toast.makeText(mActivity.getApplicationContext(), error_msg, Toast.LENGTH_LONG).show()
+            print(error_msg)
 
     def stop_service(self, instance):
         try:
             service = autoclass('org.poolpredictor.poolpredictor.ServicePoolPredictor')
-            mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+            mActivity_obj = autoclass('org.kivy.android.PythonActivity').mActivity
             
             # Tắt Service
-            service.stop(mActivity)
-            print("Đã gửi lệnh tắt Service!")
+            service.stop(mActivity_obj)
+            Toast.makeText(mActivity.getApplicationContext(), "Đã tắt Service", Toast.LENGTH_SHORT).show()
+            
         except Exception as e:
-            print("Lỗi tắt service:", e)
+            error_msg = f"Lỗi tắt Service: {str(e)}"
+            Toast.makeText(mActivity.getApplicationContext(), error_msg, Toast.LENGTH_LONG).show()
+            print(error_msg)
 
 class PoolPredictorApp(App):
     def build(self):
